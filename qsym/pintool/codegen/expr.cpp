@@ -1,6 +1,7 @@
 #include "expr_builder.h"
 #include "expr.h"
 #include "solver.h"
+#include <llvm/ADT/StringExtras.h>
 
 // NOTE: Some simplification is ported from KLEE
 namespace qsym {
@@ -380,7 +381,12 @@ void Expr::addConstraint(Kind kind, llvm::APInt rhs, llvm::APInt adjustment) {
 }
 
 void ConstantExpr::print(ostream& os, UINT depth) const {
+
+#if LLVM_VERSION_MAJOR <= 12
     os << "0x" << value_.toString(16, false);
+#else
+    os << "0x" << llvm::toString(value_, 16, false);
+#endif
 }
 
 void ConcatExpr::print(ostream& os, UINT depth) const {

@@ -8,6 +8,8 @@
 #include <llvm/ADT/APSInt.h>
 #include "pin.H"
 
+#include <llvm/ADT/StringExtras.h>
+
 namespace qsym {
 
 class BitVectorFactory {
@@ -175,7 +177,11 @@ public:
       else
         os << ", ";
 
+#if LLVM_VERSION_MAJOR <= 12
       os << '[' << i->From().toString(10) << ", " << i->To().toString(10) << ']';
+#else
+      os << '[' << toString(i->From(),10) << ", " << toString(i->To(),10) << ']';
+#endif
     }
     os << " }";
   }

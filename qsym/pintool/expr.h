@@ -14,6 +14,7 @@
 #include "common.h"
 #include "dependency.h"
 #include "third_party/llvm/range.h"
+#include "llvm/ADT/StringExtras.h"
 
 // XXX: need to change into non-global variable?
 namespace qsym {
@@ -315,7 +316,7 @@ class Expr : public DependencyNode {
 
     void printChildren(ostream& os, bool start, UINT depth) const;
 
-    virtual bool printAux(ostream& os) const {
+    virtual bool printAux(__attribute__((unused)) ostream& os) const {
       return false;
     }
 
@@ -330,8 +331,8 @@ class Expr : public DependencyNode {
 
     virtual std::string getName() const = 0;
     virtual z3::expr toZ3ExprRecursively(bool verbose) = 0;
-    virtual void hashAux(XXH32_state_t* state) { return; }
-    virtual bool equalAux(const Expr& other) const { return true; }
+    virtual void hashAux(__attribute__((unused)) XXH32_state_t* state) { return; }
+    virtual bool equalAux(__attribute__((unused)) const Expr& other) const { return true; }
     virtual ExprRef evaluateImpl() = 0;
 
 }; // class Expr
@@ -376,16 +377,27 @@ protected:
   }
 
   bool printAux(ostream& os) const override {
+
+#if LLVM_VERSION_MAJOR <= 12
     os << "value=0x" << value_.toString(16, false)
       << ", bits=" << bits_;
+#else
+    os << "value=0x" << llvm::toString(value_, 16, false)
+      << ", bits=" << bits_;
+#endif
     return true;
   }
 
-  z3::expr toZ3ExprRecursively(bool verbose) override {
+  z3::expr toZ3ExprRecursively(__attribute__((unused)) bool verbose) override {
     if (value_.getNumWords() == 1)
       return context_.bv_val((__uint64)value_.getZExtValue(), bits_);
     else
+
+#if LLVM_VERSION_MAJOR <= 12
       return context_.bv_val(value_.toString(10, false).c_str(), bits_);
+#else
+      return context_.bv_val(llvm::toString(value_, 10, false).c_str(), bits_);
+#endif
   }
 
   void hashAux(XXH32_state_t* state) override {
@@ -482,7 +494,7 @@ protected:
     return true;
   }
 
-  z3::expr toZ3ExprRecursively(bool verbose) override {
+  z3::expr toZ3ExprRecursively(__attribute__((unused)) bool verbose) override {
     return context_.bool_val(value_);
   }
 
@@ -522,7 +534,7 @@ protected:
     return true;
   }
 
-  z3::expr toZ3ExprRecursively(bool verbose) override {
+  z3::expr toZ3ExprRecursively(__attribute__((unused)) bool verbose) override {
     z3::symbol symbol = context_.int_symbol(index_);
     z3::sort sort = context_.bv_sort(8);
     return context_.constant(symbol, sort);
